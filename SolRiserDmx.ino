@@ -39,39 +39,45 @@ void setup() {
 
 void loop() {
 
-  time = millis();
     
-  while (Serial1.available()>0){
-    lastDmx = millis();
-    DmxMaster.write(idx++,Serial1.read());
+//  if (Serial1.available()>0){
+//    lastDmx = millis();
+//    DmxMaster.write(idx++,Serial1.read());
+//    if(idx > MAX_CHANNEL)
+//      idx = 1;
+//  }
+  time = millis();
+
+  if (Serial.available()>0){
+    lastDmx = time;
+    DmxMaster.write(idx++,Serial.read());
     if(idx > MAX_CHANNEL)
       idx = 1;
   }
-  
-
-  if(time - lastDmx > DMX_TIMEOUT){
-
+  else {  
     idx = 1;
     
-    DmxMaster.write(j, i++);
-    if(i == 256){
-      i = 0;
-      DmxMaster.write(j, 0);
-      j++;
-      if(j > MAX_CHANNEL)
-        j = 1;
+    if(time - lastDmx > DMX_TIMEOUT){
+  
+      DmxMaster.write(j, i++);
+      if(i == 256){
+        i = 0;
+        DmxMaster.write(j, 0);
+        j++;
+        if(j > MAX_CHANNEL)
+          j = 1;
+      }
+      
+      delay(1);
+      blink();
+      
     }
-    
-    delay(1);
-    blink();
-    
+  
   }
   
 } // loop()
 
 void blink(){
-
-  time = millis();
 
   if(time - lastBlink > BLINK_INTERVAL){
     
