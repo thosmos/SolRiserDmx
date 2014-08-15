@@ -57,25 +57,28 @@ void loop() {
   else {  
     idx = 1;
     
-    if(time - lastDmx > DMX_TIMEOUT){
-  
-      DmxMaster.write(j, i++);
-      if(i == 256){
-        i = 0;
-        DmxMaster.write(j, 0);
-        j++;
-        if(j > MAX_CHANNEL)
-          j = 1;
-      }
-      
-      delay(1);
-      blink();
-      
-    }
+    pattern();
+    blink();
   
   }
   
 } // loop()
+
+void pattern(){
+  if(time - lastDmx > DMX_TIMEOUT){
+
+    DmxMaster.write(j, i++);
+    if(i == 256){
+      i = 0;
+      DmxMaster.write(j, 0);
+      j++;
+      if(j > MAX_CHANNEL)
+        j = 1;
+    }
+    
+    delay(1);
+  }
+}
 
 void blink(){
 
