@@ -1,3 +1,12 @@
+/*
+
+SolRiser Burning Man art car lighting control
+
+written by:
+Thomas Spellman <thos37@gmail.com>
+
+*/
+
 #include <DmxMaster.h>
 #include "colors.h"
 
@@ -22,46 +31,30 @@ RgbColor lastRgb;
 
 HsvColor channels[NUM_CHANNELS];
 
+// assumes a zero indexed channel #
 void writeRgb(int channel, RgbColor rgb){
-    DmxMaster.write(channel,rgb.r * 255);
-    DmxMaster.write(channel + 1,rgb.g * 255);
-    DmxMaster.write(channel + 2,rgb.b * 255);
+    DmxMaster.write(channel * 3 + 1,rgb.r * 255);
+    DmxMaster.write(channel * 3 + 2,rgb.g * 255);
+    DmxMaster.write(channel * 3 + 3,rgb.b * 255);
 }
 
 void writeHsv(int channel, HsvColor hsv){
     RgbColor rgb = HsvToRgb(hsv);
     writeRgb(channel, rgb);
-//    DmxMaster.write(channel, rgb.r);
-//    DmxMaster.write(channel + 1,rgb.g);
-//    DmxMaster.write(channel + 2,rgb.b);
-    //Serial.print(rgb.R
 }
 
 void setup() {
   // put your setup code here, to run once:
-  DmxMaster.maxChannel(NUM_CHANNELS * 3);
+  DmxMaster.maxChannel(MAX_ADDRESS);
   pinMode(ledPin, OUTPUT);
   
   for(int i = 0; i < NUM_CHANNELS; i++){
-    //HsvColor c = {i*(360.0/NUM_CHANNELS),1,1};
     channels[i] = {i*(360.0/NUM_CHANNELS),1.0,1.0};
-    writeHsv(i * 3 + 1, channels[i]);
+    writeHsv(i, channels[i]);
   }
-  
-  //delay(2500); //The bare minimum needed to be able to reboot both linino and leonardo.
-                          // if reboot fails try increasing this number
-                          // The more you run on linux the higher this number should be
   
   Serial.begin(115200);
   Serial1.begin(115200); // Set the baud.
-
-//  // Wait for U-boot to finish startup.  Consume all bytes until we are done.
-//  do {
-//     while (Serial1.available() > 0) {
-//        Serial1.read();
-//     }
-//     delay(1000);
-//  } while (Serial1.available()>0);
   
 }
 
@@ -69,56 +62,58 @@ double H = 0.00;
 
 void loop() {
 
-    
-//  if (Serial1.available()>0){
-//    lastDmx = millis();
-//    DmxMaster.write(idx++,Serial1.read());
-//    if(idx > MAX_CHANNEL)
-//      idx = 1;
-//  }
   time = millis();
 
-  if (Serial.available()>0){
-    Serial.read();
-//    lastDmx = time;
-//    DmxMaster.write(idx++,Serial.read());
-//    if(idx > MAX_ADDRESS)
-//      idx = 1;
-
-    HsvColor hsv = {H++, 1.0, 1.0};
-    RgbColor rgb = HsvToRgb(hsv);
-
-    Serial.print("hsv ");
-    Serial.print(hsv.h);
-    Serial.print(hsv.s);
-    Serial.println(hsv.v);
-    Serial.print("rgb ");
-    Serial.print(rgb.r);
-    Serial.print(rgb.g);
-    Serial.println(rgb.b);
-    
-  }
-  else if (Serial1.available()>0){
+  // if there's DMX coming from python on either the host or linux ports, use that
+  
+  if (Serial.available()>0){ // check for DMX data from host
+  
+    //update the timestamp to test for a timeout
     lastDmx = time;
-    DmxMaster.write(idx++,Serial1.read());
+    
+    // read a byte of data from the USB and write it to the DMX network, incrementing the DMX address counter in the process
+    DmxMaster.write(idx++,Serial.read());
+    
+    // in case we're streaming random amounts of data, beging at the beginning again
     if(idx > MAX_ADDRESS)
       idx = 1;
+      
+  }
+  else if (Serial1.available()>0){ //check for DMX data from linux
+
+    //update the timestamp to test for a timeout
+    lastDmx = time;
+    
+    // read a byte of data from the USB and write it to the DMX network, incrementing the DMX address counter in the process
+    DmxMaster.write(idx++,Serial1.read());
+    
+    // in case we're streaming random amounts of data, beging at the beginning again
+    if(idx > MAX_ADDRESS)
+      idx = 1;
+      
   }
   else {  
+    
+    // if no DMX data, then continue the loop
+    // between each batch of DMX data from host or linux, this will run
+
+    // reset the DMX data address counter    
     idx = 1;
 
-  // test to see if we run the default pattern(s)
-  if(time - lastDmx > DMX_TIMEOUT){
-    if(currentPattern == 1){
-      pattern1();
-    } else if (currentPattern == 2){
-      pattern2();
-    } else {
-      pattern1();
-    }
-  }  
+    // test to see if the external DMX sources have timed out
+    // if so, then run the default pattern(s)
+    if(time - lastDmx > DMX_TIMEOUT){
+      if(currentPattern == 1){
+        pattern1();
+      } else if (currentPattern == 2){
+        pattern2();
+      } else {
+        pattern1();
+      }
+    }  
     
-   blink();
+    // do the LED13 blink
+    blink();
   
   }
   
@@ -126,24 +121,29 @@ void loop() {
 
 void pattern2(){
   
-//    if( 24 < j < 30 ){
-//      //writeRgb(j * 3 + 1, {,200,200});
-//      writeHsv(j * 3 + 1, {0.0, 0.0, 0.8});
-//      j++;
-//      return;
-//    }
+    // set channels 25 - 27 && 30 to white (railings and stairs)
+    if( 24 < j && j < 28 || j == 30 ){
+      //writeRgb(j * 3 + 1, {,200,200});
+      writeHsv(j, {0.0, 0.0, 0.8});
+      j++;
+      return;
+    }
   
-    writeHsv(j * 3 + 1, channels[j]);
+    // write the value in the channels array
+    writeHsv(j, channels[j]);
+    // increment hue by one
     channels[j].h += 1.0;
+    //test for reset
     if(channels[j].h >= 360.0)
       channels[j].h = 0.0;
     j++;
-  
+
+    //startover  
     if(j >= NUM_CHANNELS){
       j = 0;
-      //nextPattern();
       return;
     }
+    
     //delay(1);
 }
 
@@ -163,7 +163,7 @@ void pattern1(){
         return;
       }
     }
-    delay(1);
+    //delay(1);
 }
 
 void blink(){
@@ -178,8 +178,6 @@ void blink(){
       digitalWrite(ledPin, HIGH);
       
     blinkState = !blinkState;
-    
-    //Serial.println("blink");
     
   }
   
