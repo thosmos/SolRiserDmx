@@ -38,11 +38,11 @@ boolean pattern2initted = false;
 // array to store state of lights across loops
 HsvColor channels[NUM_CHANNELS];
 
-// assumes a zero indexed channel #
+// assumes a zero indexed channel # and a float RGB value from 0.0 to 1.0
 void writeRgb(int channel, RgbColor rgb){
-    DmxMaster.write(channel * 3 + 1,rgb.r * 255);
-    DmxMaster.write(channel * 3 + 2,rgb.g * 255);
-    DmxMaster.write(channel * 3 + 3,rgb.b * 255);
+    DmxMaster.write(channel * 3 + 1, rgb.r * 255);
+    DmxMaster.write(channel * 3 + 2, rgb.g * 255);
+    DmxMaster.write(channel * 3 + 3, rgb.b * 255);
 }
 
 void writeHsv(int channel, HsvColor hsv){
@@ -60,6 +60,11 @@ void setup() {
 }
 
 void loop() {
+  
+  /* 
+     It's critically important to do a minimum amount of work per loop, and let it come around again.  
+     Holding the loop for too long, such as with an inner while loop, will cause the DMX output to get faily.
+  */
 
   time = millis();
 
@@ -118,6 +123,25 @@ void loop() {
   
 } // loop()
 
+void pattern1(){
+    if(j < 1)
+      j = 1;
+      
+    DmxMaster.write(j, i++);
+    if(i == 256){
+      i = 0;
+      DmxMaster.write(j, 0);
+      j++;
+      
+      if(j > MAX_ADDRESS){
+        j = 1;
+        //nextPattern();
+        return;
+      }
+    }
+    //delay(1);
+}
+
 void pattern2(){
   
     if(!pattern2initted){
@@ -153,25 +177,6 @@ void pattern2(){
       return;
     }
     
-    //delay(1);
-}
-
-void pattern1(){
-    if(j < 1)
-      j = 1;
-      
-    DmxMaster.write(j, i++);
-    if(i == 256){
-      i = 0;
-      DmxMaster.write(j, 0);
-      j++;
-      
-      if(j > MAX_ADDRESS){
-        j = 1;
-        //nextPattern();
-        return;
-      }
-    }
     //delay(1);
 }
 
