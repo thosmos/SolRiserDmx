@@ -15,20 +15,27 @@ Thomas Spellman <thos37@gmail.com>
 #define MAX_ADDRESS 93
 #define NUM_CHANNELS 31
 #define MAX_PATTERN 2
+#define LED_PIN 13
 
-int ledPin = 13;
 unsigned long time = 0;
 unsigned long lastBlink = 0;
 unsigned long lastDmx = 0;
 boolean blinkState = false;
-byte readIn = 0;
-int idx = 0;
+
+// DMX address counter
+int idx = 0;  
+
+// misc indexers
 int i = 0;
 int j = 0; 
+
+// current pattern running
 int currentPattern = 2;
 
-RgbColor lastRgb;
+// pattern specific variables
+boolean pattern2initted = false;
 
+// array to store state of lights across loops
 HsvColor channels[NUM_CHANNELS];
 
 // assumes a zero indexed channel #
@@ -44,21 +51,13 @@ void writeHsv(int channel, HsvColor hsv){
 }
 
 void setup() {
-  // put your setup code here, to run once:
   DmxMaster.maxChannel(MAX_ADDRESS);
-  pinMode(ledPin, OUTPUT);
-  
-  for(int i = 0; i < NUM_CHANNELS; i++){
-    channels[i] = {i*(360.0/NUM_CHANNELS),1.0,1.0};
-    writeHsv(i, channels[i]);
-  }
-  
+  pinMode(LED_PIN, OUTPUT);
+
   Serial.begin(115200);
   Serial1.begin(115200); // Set the baud.
   
 }
-
-double H = 0.00;
 
 void loop() {
 
@@ -121,7 +120,17 @@ void loop() {
 
 void pattern2(){
   
+    if(!pattern2initted){
+      // setup the initial rainbow  
+      for(int i = 0; i < NUM_CHANNELS; i++){
+        channels[i] = {i*(360.0/NUM_CHANNELS),1.0,1.0};
+        writeHsv(i, channels[i]);
+      }
+      pattern2initted = true;
+    }
+  
     // set channels 25 - 27 && 30 to white (railings and stairs)
+    // TODO change the stairs DMX address to 28 to make this smoother for coding
     if( 24 < j && j < 28 || j == 30 ){
       //writeRgb(j * 3 + 1, {,200,200});
       writeHsv(j, {0.0, 0.0, 0.8});
@@ -173,9 +182,9 @@ void blink(){
     lastBlink = time;
     
     if(blinkState)
-      digitalWrite(ledPin, LOW);
+      digitalWrite(LED_PIN, LOW);
     else
-      digitalWrite(ledPin, HIGH);
+      digitalWrite(LED_PIN, HIGH);
       
     blinkState = !blinkState;
     
