@@ -8,10 +8,11 @@ Thomas Spellman <thos37@gmail.com>
 TODO: figure out why rainbow fade seems to move backward from high channels to low
 
 * 0.1: fixed flicker on data coming from yun's linux
+* 0.2: added DmxMaster files to Arduino project to make it easier to get up and running (might need to remove it from Arduino/libraries folder)
 
 */
 
-#include <DmxMaster.h>
+#include "DmxMaster.h"
 #include "colors.h"
 
 #define BLINK_INTERVAL 500
