@@ -5,6 +5,10 @@ SolRiser Burning Man art car lighting control
 written by:
 Thomas Spellman <thos37@gmail.com>
 
+TODO: figure out why rainbow fade seems to move backward from high channels to low
+
+* 0.1: fixed flicker on data coming from yun's linux
+
 */
 
 #include <DmxMaster.h>
@@ -14,7 +18,7 @@ Thomas Spellman <thos37@gmail.com>
 #define DMX_TIMEOUT 1000
 #define MAX_ADDRESS 93
 #define NUM_CHANNELS 31
-#define MAX_PATTERN 2
+#define MAX_PATTERN 3
 #define LED_PIN 13
 
 unsigned long time = 0;
@@ -30,10 +34,11 @@ int i = 0;
 int j = 0; 
 
 // current pattern running
-int currentPattern = 2;
+int currentPattern = 3;
 
 // pattern specific variables
 boolean pattern2initted = false;
+boolean p3_init = false;
 
 // array to store state of lights across loops
 HsvColor channels[NUM_CHANNELS];
@@ -101,8 +106,12 @@ void loop() {
     // if no DMX data, then continue the loop
     // between each batch of DMX data from host or linux, this will run
 
-    // reset the DMX data address counter    
-    idx = 1;
+    if(time - lastDmx > 5){
+      // if it's been a little while (but well less than one 40hz frame or 25ms)
+      // reset the DMX data address counter    
+      // this fixes some flicker problems caused by the serial.available() returning false in the middle of a serial transfer 
+      idx = 1;
+    }
 
     // test to see if the external DMX sources have timed out
     // if so, then run the default pattern(s)
@@ -111,6 +120,8 @@ void loop() {
         pattern1();
       } else if (currentPattern == 2){
         pattern2();
+      } else if (currentPattern == 3){
+        pattern3();
       } else {
         pattern1();
       }
@@ -146,8 +157,8 @@ void pattern2(){
   
     if(!pattern2initted){
       // setup the initial rainbow  
-      for(int i = 0; i < NUM_CHANNELS; i++){
-        channels[i] = {i*(360.0/NUM_CHANNELS),1.0,1.0};
+      for(int i = NUM_CHANNELS - 1; i >= 0; i--){
+        channels[i] = {i*(60.0/NUM_CHANNELS),1.0,1.0};
         writeHsv(i, channels[i]);
       }
       pattern2initted = true;
@@ -177,7 +188,50 @@ void pattern2(){
       return;
     }
     
-    //delay(1);
+    delay(1);
+}
+
+void pattern3(){
+  
+    if(!p3_init){
+      // setup the initial rainbow  
+//      for(int i = NUM_CHANNELS - 1; i >= 0; i--){
+//        channels[i] = {i*(60.0/NUM_CHANNELS),1.0,1.0};
+//        writeHsv(i, channels[i]);
+//      }
+//      j = NUM_CHANNELS - 1;
+      for(int i = 0 - 1; i < NUM_CHANNELS; i++){
+        channels[i] = {i*(60.0/NUM_CHANNELS),1.0,1.0};
+        writeHsv(i, channels[i]);
+      }
+      p3_init = true;
+    }
+  
+//    // set channels 25 - 27 && 30 to white (railings and stairs)
+//    // TODO change the stairs DMX address to 28 to make this smoother for coding
+//    if( 24 < j && j < 28 || j == 30 ){
+//      //writeRgb(j * 3 + 1, {,200,200});
+//      writeHsv(j, {0.0, 0.0, 0.8});
+//      j--;
+//      return;
+//    }
+  
+    // write the value in the channels array
+    writeHsv(j, channels[j]);
+    // increment hue by one
+    channels[j].h += 1.0;
+    //test for reset
+    if(channels[j].h >= 360.0)
+      channels[j].h = 0.0;
+    j--;
+
+    //startover  
+    if(j < 0){
+      j = NUM_CHANNELS - 1;
+      return;
+    }
+    
+    delay(1);
 }
 
 void blink(){
