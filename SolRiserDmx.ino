@@ -17,9 +17,9 @@ TODO: figure out why rainbow fade seems to move backward from high channels to l
 
 #define BLINK_INTERVAL 500
 #define DMX_TIMEOUT 1000
-#define MAX_ADDRESS 93
-#define NUM_CHANNELS 31
-#define MAX_PATTERN 3
+#define MAX_ADDRESS 90
+#define NUM_CHANNELS 30
+#define MAX_PATTERN 2
 #define LED_PIN 13
 
 unsigned long time = 0;
@@ -35,7 +35,7 @@ int i = 0;
 int j = 0; 
 
 // current pattern running
-int currentPattern = 3;
+int currentPattern = 2;
 
 // pattern specific variables
 boolean pattern2initted = false;
